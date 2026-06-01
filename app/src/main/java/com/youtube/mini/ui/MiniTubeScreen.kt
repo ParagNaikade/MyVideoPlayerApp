@@ -408,7 +408,7 @@ private fun SearchBar(query: String, onChange: (String) -> Unit) {
             .padding(horizontal = 10.dp, vertical = 6.dp),
         singleLine = true,
         label = { Text("Search videos") },
-    )
+    }
 }
 
 @Composable
