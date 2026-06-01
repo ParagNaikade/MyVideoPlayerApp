@@ -646,7 +646,7 @@ private fun LibraryGrid(videos: List<VideoItem>, onOpen: (VideoItem) -> Unit) {
                 }
             }
         }
-    )
+    }
 }
 
 @Composable
