@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "YouTube-Mini"
+rootProject.name = "MyVideoPlayerApp"
 include(":app")
