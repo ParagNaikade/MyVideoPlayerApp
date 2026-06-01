@@ -335,7 +335,7 @@ fun MiniTubeScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Parent Controls", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Hide or allow videos from your phone gallery")
+                Text("Manage access by folder")
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -353,35 +353,52 @@ fun MiniTubeScreen(
                 }
                 Text(
                     text = if (ui.useAllowListMode) {
-                        "Only enabled videos will be visible in child view."
+                        "Only enabled folders will be visible in child view."
                     } else {
-                        "All videos visible except blocked ones."
+                        "All folders visible except blocked ones."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF666666),
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                val folderMap = ui.videos.groupBy { video ->
+                    video.uri.substringBeforeLast("/").substringAfterLast("/")
+                        .takeIf { it.isNotEmpty() } ?: "Device Storage"
+                }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(ui.videos, key = { it.id }) { video ->
+                    items(folderMap.keys.sorted()) { folderName ->
+                        val videosInFolder = folderMap[folderName] ?: emptyList()
+                        val isAllowed = videosInFolder.all { video ->
+                            if (ui.useAllowListMode) {
+                                ui.allowedIds.contains(video.id)
+                            } else {
+                                !ui.blockedIds.contains(video.id)
+                            }
+                        }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(video.title, modifier = Modifier.weight(1f))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(folderName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    text = "${videosInFolder.size} video${if (videosInFolder.size != 1) "s" else ""}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF666666),
+                                )
+                            }
                             Switch(
-                                checked = if (ui.useAllowListMode) {
-                                    ui.allowedIds.contains(video.id)
-                                } else {
-                                    !ui.blockedIds.contains(video.id)
-                                },
+                                checked = isAllowed,
                                 onCheckedChange = { checked ->
-                                    if (ui.useAllowListMode) {
-                                        vm.setAllowed(video.id, allowed = checked)
-                                    } else {
-                                        vm.setBlocked(video.id, blocked = !checked)
+                                    videosInFolder.forEach { video ->
+                                        if (ui.useAllowListMode) {
+                                            vm.setAllowed(video.id, allowed = checked)
+                                        } else {
+                                            vm.setBlocked(video.id, blocked = !checked)
+                                        }
                                     }
                                 },
                             )
@@ -420,6 +437,12 @@ private fun ContinueWatchingRail(items: List<ContinueWatchingItem>, onOpen: (Vid
             text = "Continue watching",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+        Text(
+            text = "← Scroll to see more →",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF999999),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
