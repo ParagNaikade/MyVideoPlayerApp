@@ -32,6 +32,7 @@ data class MiniTubeUiState(
     val parentAuthError: String? = null,
     val failedAttempts: Int = 0,
     val lockoutUntilMs: Long = 0L,
+    val sourceFolders: Set<String> = emptySet(),
 )
 
 data class ContinueWatchingItem(
@@ -55,9 +56,17 @@ class MiniTubeViewModel(application: Application) : AndroidViewModel(application
     private var watchProgress: Map<Long, ParentPrefs.WatchProgressEntry> = emptyMap()
 
     private val _uiState = MutableStateFlow(MiniTubeUiState())
+        private var sourceFolders: Set<String> = emptySet()
     val uiState: StateFlow<MiniTubeUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            parentPrefs.sourceFolders.collectLatest { folders ->
+                sourceFolders = folders
+                _uiState.update { it.copy(sourceFolders = folders) }
+                refreshVideos()
+            }
+        }
         viewModelScope.launch {
             parentPrefs.blockedVideoIds.collectLatest { blocked ->
                 _uiState.update { it.copy(blockedIds = blocked) }
@@ -101,7 +110,7 @@ class MiniTubeViewModel(application: Application) : AndroidViewModel(application
 
     fun refreshVideos() {
         viewModelScope.launch {
-            val videos = repo.getVideos()
+                val videos = repo.getVideos(sourceFolders)
             _uiState.update { it.copy(videos = videos) }
             recomputeContinueWatching()
         }
@@ -239,6 +248,12 @@ class MiniTubeViewModel(application: Application) : AndroidViewModel(application
 
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun setSourceFolders(paths: Set<String>) {
+        viewModelScope.launch {
+            parentPrefs.setSourceFolders(paths)
+        }
     }
 
     companion object {

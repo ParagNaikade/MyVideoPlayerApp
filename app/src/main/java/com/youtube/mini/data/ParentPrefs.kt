@@ -26,7 +26,7 @@ class ParentPrefs(private val context: Context) {
     private val watchProgressKey = stringPreferencesKey("watch_progress")
     private val failedAttemptsKey = intPreferencesKey("failed_attempts")
     private val lockoutUntilKey = longPreferencesKey("lockout_until_ms")
-
+        private val sourceFoldersKey = stringPreferencesKey("source_folders")
     val pinHash: Flow<String?> = context.parentDataStore.data.map { it[pinHashKey] }
     val failedAttempts: Flow<Int> = context.parentDataStore.data.map { it[failedAttemptsKey] ?: 0 }
     val lockoutUntilMs: Flow<Long> = context.parentDataStore.data.map { it[lockoutUntilKey] ?: 0L }
@@ -49,6 +49,11 @@ class ParentPrefs(private val context: Context) {
     val watchProgress: Flow<Map<Long, WatchProgressEntry>> = context.parentDataStore.data.map { prefs ->
         decodeWatchProgress(prefs[watchProgressKey].orEmpty())
     }
+
+        val sourceFolders: Flow<Set<String>> = context.parentDataStore.data.map { prefs ->
+            val raw = prefs[sourceFoldersKey] ?: return@map emptySet()
+            raw.split("|").filter { it.isNotEmpty() }.toSet()
+        }
 
     suspend fun setPin(pin: String) {
         context.parentDataStore.edit { prefs ->
@@ -80,6 +85,12 @@ class ParentPrefs(private val context: Context) {
             prefs[useAllowListModeKey] = enabled
         }
     }
+
+        suspend fun setSourceFolders(paths: Set<String>) {
+            context.parentDataStore.edit { prefs ->
+                prefs[sourceFoldersKey] = paths.joinToString("|")
+            }
+        }
 
     suspend fun saveWatchProgress(videoId: Long, positionMs: Long, updatedAtMs: Long) {
         context.parentDataStore.edit { prefs ->

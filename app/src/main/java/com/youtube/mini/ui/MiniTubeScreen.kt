@@ -85,6 +85,7 @@ import com.youtube.mini.ui.BottomTab
 import com.youtube.mini.ui.ContinueWatchingItem
 import kotlin.math.max
 
+import androidx.compose.material3.Checkbox
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiniTubeScreen(
@@ -336,11 +337,93 @@ fun MiniTubeScreen(
                 val folderName = video.uri.toString().substringBeforeLast("/").substringAfterLast("/")
                 if (folderName.isNotEmpty()) folderName else "Device Storage"
             }
-            Column(modifier = Modifier.padding(16.dp)) {
+            var selectedFolders by remember { mutableStateOf(ui.sourceFolders) }
+            
+            Column(modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()) {
                 Text("Parent Controls", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Manage access by folder")
+                Text("Select video sources", style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                if (selectedFolders.isEmpty()) {
+                    Text(
+                        text = "No folders selected. Select at least one folder to show videos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFEA6D5E),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+                
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(getAllAvailableFolders().sorted()) { folderPath ->
+                        val isSelected = selectedFolders.contains(folderPath)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedFolders = if (isSelected) {
+                                        selectedFolders - folderPath
+                                    } else {
+                                        selectedFolders + folderPath
+                                    }
+                                }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = folderPath.substringAfterLast("/").let { 
+                                        if (it.isNotEmpty()) it else "Device Storage"
+                                    },
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = folderPath,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF999999),
+                                    fontSize = androidx.compose.material3.MaterialTheme.typography.labelSmall.fontSize,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            androidx.compose.material3.Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    selectedFolders = if (isSelected) {
+                                        selectedFolders - folderPath
+                                    } else {
+                                        selectedFolders + folderPath
+                                    }
+                                }
+                            )
+                        }
+                        HorizontalDivider(color = Color(0xFFEAEAEA))
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { vm.setSourceFolders(selectedFolders) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    enabled = selectedFolders.isNotEmpty()
+                ) {
+                    Text("Apply")
+                }
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color(0xFFEAEAEA))
+                Text("Access Control", style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -365,6 +448,12 @@ fun MiniTubeScreen(
                     color = Color(0xFF666666),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                
+                val folderMap = ui.videos.groupBy { video ->
+                    val folderName = video.uri.toString().substringBeforeLast("/").substringAfterLast("/")
+                    if (folderName.isNotEmpty()) folderName else "Device Storage"
+                }
+                
                 LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(folderMap.keys.sorted()) { folderName ->
                         val videosInFolder = folderMap[folderName] ?: emptyList()
@@ -413,6 +502,16 @@ fun MiniTubeScreen(
     ui.selectedVideo?.let { selected ->
         FullscreenPlayerDialog(video = selected, onClose = { vm.closePlayer(it) })
     }
+    }
+
+    private fun getAllAvailableFolders(): List<String> {
+        return listOf(
+            "/storage/emulated/0/DCIM",
+            "/storage/emulated/0/Movies",
+            "/storage/emulated/0/Download",
+            "/storage/emulated/0/Pictures",
+            "/storage/emulated/0/Videos",
+        )
 }
 
 @Composable
