@@ -332,6 +332,10 @@ fun MiniTubeScreen(
 
     if (ui.parentPanelVisible && ui.hasPin) {
         ModalBottomSheet(onDismissRequest = { vm.setParentPanelVisible(false) }) {
+            val folderMap = ui.videos.groupBy { video ->
+                video.uri.substringBeforeLast("/").substringAfterLast("/")
+                    .takeIf { it.isNotEmpty() } ?: "Device Storage"
+            }
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Parent Controls", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -361,11 +365,7 @@ fun MiniTubeScreen(
                     color = Color(0xFF666666),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                val folderMap = ui.videos.groupBy { video ->
-                    video.uri.substringBeforeLast("/").substringAfterLast("/")
-                        .takeIf { it.isNotEmpty() } ?: "Device Storage"
-                }
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(folderMap.keys.sorted()) { folderName ->
                         val videosInFolder = folderMap[folderName] ?: emptyList()
                         val isAllowed = videosInFolder.all { video ->
