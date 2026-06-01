@@ -333,7 +333,7 @@ fun MiniTubeScreen(
     if (ui.parentPanelVisible && ui.hasPin) {
         ModalBottomSheet(onDismissRequest = { vm.setParentPanelVisible(false) }) {
             val folderMap = ui.videos.groupBy { video ->
-                val folderName = video.uri.substringBeforeLast("/").substringAfterLast("/")
+                val folderName = video.uri.toString().substringBeforeLast("/").substringAfterLast("/")
                 if (folderName.isNotEmpty()) folderName else "Device Storage"
             }
             Column(modifier = Modifier.padding(16.dp)) {
